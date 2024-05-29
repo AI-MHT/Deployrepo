@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload and Process Images</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h2 class="mb-4">Upload and Process Images</h2>
+        <form id="upload-form" method="POST" action="/uploadimages" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="images">Select images to upload</label>
+                <input type="file" class="form-control-file" id="images" name="images" multiple>
+            </div>
+            <button type="submit" class="btn btn-primary">Upload</button>
+        </form>
+        <br>
+        <button id="execute-all-btn" class="btn btn-success">Execute All</button>
+        <br><br>
+        <a id="download-csv-btn" class="btn btn-info" href="#" style="display: none;">Download CSV</a>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('#execute-all-btn').click(function() {
+                $.post('/execute_all', function(response) {
+                    alert(response.message);
+                    if (response.message === 'All functionalities executed successfully') {
+                        $('#download-csv-btn').show();
+                        $('#download-csv-btn').attr('href', '/download_csv/image_info.csv');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>

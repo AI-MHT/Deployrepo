@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Images</title>
+</head>
+<body>
+    <h1>Upload Images</h1>
+    <form id="uploadForm" action="/upload_image" method="post" enctype="multipart/form-data">
+        <input type="file" name="files" id="fileInput" multiple>
+        <button type="submit">Upload</button>
+    </form>
+
+    <script>
+        // Optional: You can add JavaScript to provide user feedback, such as displaying selected filenames
+        document.getElementById('fileInput').addEventListener('change', function (event) {
+            const fileList = event.target.files;
+            const filenames = [];
+            for (let i = 0; i < fileList.length; i++) {
+                filenames.push(fileList[i].name);
+            }
+            alert('Selected files: ' + filenames.join(', '));
+        });
+    </script>
+</body>
+</html>
