@@ -1,36 +1,37 @@
 from flask import Flask, request, jsonify, render_template, send_from_directory
+from geopy.geocoders import Nominatim
+from PIL import Image
+from math import radians, sin, cos, sqrt, atan2
+from datetime import datetime
+from latex import create_latex_from_images
+from yolo import yolo_inference
+
 import os
 import shutil
 import pytesseract
 import exifread
 import csv
-from geopy.geocoders import Nominatim
-from PIL import Image
-from ultralytics import YOLO
-from math import radians, sin, cos, sqrt, atan2
 import yagmail
-from datetime import datetime
-from latex import create_latex_from_images
-
 
 input_folder = 'images'
 output_construction = 'resultat/construction'
-output_plus_4 = 'resultat/plus_4_etages'
-output_3 = 'resultat/3_etages'
-output_2= 'resultat/2_etages'
-output_1 = 'resultat/1_etage'
+
 resultat_csv_path = 'resultat/image_info.csv'
 b2b_csv_path = 'modeles/b2b.csv'
-updated_csv_path = 'resultat/resultatfinal.csv'
-csv_file_path_json='resultat/resultatfinal.csv'
+updated_csv_path = 'resultat/dataset.csv'
+csv_file_path_json='resultat/datasets.csv'
 json_file_path_json='../../../../orange/orange/src/Data/output1.json'
 app = Flask(__name__)
 
 # Exemple d'utilisation de la fonction
-image_folder = 'resultat/construction'
+image_folder = 'images'
 rapport_tex = 'rapport.tex'
 rapport = 'Rapport'
 
+
+# Configuration des dossiers de téléchargement et de résultats
+app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['RESULT_FOLDER'] = 'resultat'
 # Function to perform OCR on the image
 def ocr_image(image_path):
     with Image.open(image_path) as img:
@@ -141,8 +142,10 @@ def send_email():
     # Delete the files after sending the email
     try:
         os.remove('Rapport.log')
+        os.remove('rapport.tex')
         os.remove('Rapport.pdf')
         os.remove('Rapport.aux')
+        os.remove('resultat/image_info.csv')
         print("Temporary files deleted successfully.")
     except OSError as e:
         print(f"Error deleting file: {e}")
@@ -173,9 +176,9 @@ def upload_images():
 def execute_all():
     # yolo_inference()
     # save_image_info()
-    # update_csv()
+    update_csv()
 
-    create_latex_from_images(image_folder, rapport_tex, rapport)
+    # create_latex_from_images(image_folder, rapport_tex, rapport)
     # send_email()
     return jsonify({'message': 'All functionalities executed successfully'})
 
@@ -201,68 +204,6 @@ def process_images():
                 detected_images.append(filename)
 
     return jsonify({'message': 'Images processed successfully', 'detected_images': detected_images})
-
-# Route to perform inference using YOLO model
-def yolo_inference():
-
-    model_path = "modeles/plus_4_etages.pt"
-    os.makedirs(output_plus_4, exist_ok=True)
-    model = YOLO(model_path)
-    processed_images = []
-    for filename in os.listdir(input_folder):
-        if filename.endswith(".jpg") or filename.endswith(".png"):
-            input_path = os.path.join(input_folder, filename)
-            results = model(input_path, conf=0.01)
-            for result in results:
-                if len(result) > 0:
-                    output_final_path = os.path.join(output_plus_4, filename)
-                    shutil.move(input_path, output_final_path)
-                    processed_images.append(filename)
-
-
-    model_path = "modeles/3_etages.pt"
-    os.makedirs(output_plus_4, exist_ok=True)
-    model = YOLO(model_path)
-    processed_images = []
-    for filename in os.listdir(input_folder):
-        if filename.endswith(".jpg") or filename.endswith(".png"):
-            input_path = os.path.join(input_folder, filename)
-            results = model(input_path, conf=0.14)
-            for result in results:
-                if len(result) > 0:
-                    output_final_path = os.path.join(output_3, filename)
-                    shutil.move(input_path, output_final_path)
-                    processed_images.append(filename)
-
-    model_path = "modeles/2_etages.pt"
-    os.makedirs(output_plus_4, exist_ok=True)
-    model = YOLO(model_path)
-    processed_images = []
-    for filename in os.listdir(input_folder):
-        if filename.endswith(".jpg") or filename.endswith(".png"):
-            input_path = os.path.join(input_folder, filename)
-            results = model(input_path, conf=0.14)
-            for result in results:
-                if len(result) > 0:
-                    output_final_path = os.path.join(output_2, filename)
-                    shutil.move(input_path, output_final_path)
-                    processed_images.append(filename)
-    
-    model_path = "modeles/1_etage.pt"
-    os.makedirs(output_plus_4, exist_ok=True)
-    model = YOLO(model_path)
-    processed_images = []
-    for filename in os.listdir(input_folder):
-        if filename.endswith(".jpg") or filename.endswith(".png"):
-            input_path = os.path.join(input_folder, filename)
-            results = model(input_path, conf=0.14)
-            for result in results:
-                if len(result) > 0:
-                    output_final_path = os.path.join(output_1, filename)
-                    shutil.move(input_path, output_final_path)
-                    processed_images.append(filename)
-
-    return jsonify({'message': 'YOLO inference completed', 'processed_images': processed_images})
 
 # Route to save image information to CSV
 def save_image_info():
