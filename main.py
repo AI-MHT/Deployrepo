@@ -1,50 +1,29 @@
 from flask import Flask, request, jsonify, render_template, send_from_directory
 from geopy.geocoders import Nominatim
-from PIL import Image
 from math import radians, sin, cos, sqrt, atan2
 from datetime import datetime
 from latex import create_latex_from_images
-from yolo import yolo_inference
+from yolocr import yolo_inference
 
 import os
-import shutil
-import pytesseract
 import exifread
 import csv
-import yagmail
 
 input_folder = 'images'
-output_construction = 'resultat/construction'
 
 resultat_csv_path = 'resultat/image_info.csv'
 b2b_csv_path = 'modeles/b2b.csv'
 updated_csv_path = 'resultat/dataset.csv'
 csv_file_path_json='resultat/datasets.csv'
-json_file_path_json='../../../../orange/orange/src/Data/output1.json'
-app = Flask(__name__)
 
+app = Flask(__name__)
 # Exemple d'utilisation de la fonction
-image_folder = 'images'
 rapport_tex = 'rapport.tex'
 rapport = 'Rapport'
 
-
 # Configuration des dossiers de téléchargement et de résultats
-app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['UPLOAD_FOLDER'] = 'images'
 app.config['RESULT_FOLDER'] = 'resultat'
-# Function to perform OCR on the image
-def ocr_image(image_path):
-    with Image.open(image_path) as img:
-        text = pytesseract.image_to_string(img)
-        return text.lower()
-
-# Function to check if specific words are present in the OCR result
-def check_words_in_image(image_path, words):
-    ocr_text = ocr_image(image_path)
-    for word in words:
-        if word.lower() in ocr_text:
-            return True
-    return False
 
 # Function to convert coordinates from degrees, minutes, seconds to decimal
 def convert_to_decimal(coord, ref):
@@ -120,37 +99,6 @@ def calculate_distance(lat1, lon1, lat2, lon2):
     distance = radius_earth * c
     return distance
 
-def send_email():
-    sender_email = 'workoutaiman@gmail.com'
-    sender_password = 'mxjl imza srho djmn'
-    receiver_email = 'workoutaiman@hotmail.com'
-    current_date = datetime.now().strftime("%d_%m_%Y")
-
-    yag = yagmail.SMTP(sender_email, sender_password)
-    
-    file_path = f'Rapport.pdf'
-    subject = f"CSV File - {current_date}"
-    body = "Veuillez trouver le fichier CSV ci-joint et vous devez le vérifier"
-
-    yag.send(
-        to=receiver_email,
-        subject=subject,
-        contents=body,
-        attachments=file_path,
-    )
-
-    # Delete the files after sending the email
-    try:
-        os.remove('Rapport.log')
-        os.remove('rapport.tex')
-        os.remove('Rapport.pdf')
-        os.remove('Rapport.aux')
-        os.remove('resultat/image_info.csv')
-        print("Temporary files deleted successfully.")
-    except OSError as e:
-        print(f"Error deleting file: {e}")
-
-
 
 @app.route('/uploadimages', methods=['GET', 'POST'])
 def upload_images():
@@ -165,8 +113,11 @@ def upload_images():
                 continue
             if file:
                 file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
-                file.save(file_path)
-                uploaded_files.append(file.filename)
+                if not os.path.exists(file_path):  # Check for duplicate
+                    file.save(file_path)
+                    uploaded_files.append(file.filename)
+                else:
+                    print(f"Duplicate image {file.filename} skipped.")
 
         return jsonify({'message': 'Images uploaded successfully', 'files': uploaded_files})
 
@@ -176,34 +127,15 @@ def upload_images():
 def execute_all():
     # yolo_inference()
     # save_image_info()
-    update_csv()
+    # update_csv()
 
-    # create_latex_from_images(image_folder, rapport_tex, rapport)
+    create_latex_from_images(input_folder, rapport_tex, rapport, max_width=800, max_height=600)
     # send_email()
     return jsonify({'message': 'All functionalities executed successfully'})
 
 @app.route('/download_csv/<filename>', methods=['GET'])
 def download_csv(filename):
     return send_from_directory(app.config['RESULT_FOLDER'], filename, as_attachment=True)
-
-# Route to process images
-def process_images():
-    words_to_check = [
-        "appart", "dh", "villa", "000", "magasin", "immob", "archi",
-        "resid", "dence", "imme", "00", "oo", "architecture", "construction",
-        "immobiliere", "immo", "bilie", "constru", "archi", "REGION"]
-
-    os.makedirs(output_construction, exist_ok=True)
-    detected_images = []
-
-    for filename in os.listdir(input_folder):
-        if filename.endswith(".jpg") or filename.endswith(".png"):
-            image_path = os.path.join(input_folder, filename)
-            if check_words_in_image(image_path, words_to_check):
-                shutil.move(image_path, os.path.join(output_construction, filename))
-                detected_images.append(filename)
-
-    return jsonify({'message': 'Images processed successfully', 'detected_images': detected_images})
 
 # Route to save image information to CSV
 def save_image_info():

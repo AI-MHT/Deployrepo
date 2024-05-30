@@ -35,6 +35,7 @@ def create_latex_from_images(image_folder, rapport_tex, rapport, max_width=800, 
     '''
 
     # Ajouter les images au document LaTeX avec redimensionnement
+    image_counter = 0
     for image_name in os.listdir(image_folder):
         if image_name.lower().endswith(('.png', '.jpg', '.jpeg', '.pdf')):
             image_path = os.path.join(image_folder, image_name)
@@ -49,6 +50,9 @@ def create_latex_from_images(image_folder, rapport_tex, rapport, max_width=800, 
                 \caption{''' + image_name + r'''}
                 \end{figure}
                 '''
+                image_counter += 1
+                if image_counter >= 3:
+                    break
 
     # Fin du document LaTeX
     latex_content += r'\end{document}'
@@ -61,3 +65,8 @@ def create_latex_from_images(image_folder, rapport_tex, rapport, max_width=800, 
     subprocess.run(['pdflatex', '-interaction=nonstopmode', rapport_tex])
     subprocess.run(['pdflatex', '-interaction=nonstopmode', rapport_tex])  # Exécuter deux fois pour résoudre les références
 
+# Example usage
+image_folder = 'images'
+rapport_tex = 'rapport.tex'
+rapport = 'Rapport'
+create_latex_from_images(image_folder, rapport_tex, rapport)
