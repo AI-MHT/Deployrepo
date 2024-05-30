@@ -65,8 +65,4 @@ def create_latex_from_images(image_folder, rapport_tex, rapport, max_width=800, 
     subprocess.run(['pdflatex', '-interaction=nonstopmode', rapport_tex])
     subprocess.run(['pdflatex', '-interaction=nonstopmode', rapport_tex])  # Exécuter deux fois pour résoudre les références
 
-# Example usage
-image_folder = 'images'
-rapport_tex = 'rapport.tex'
-rapport = 'Rapport'
-create_latex_from_images(image_folder, rapport_tex, rapport)
+

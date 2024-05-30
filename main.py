@@ -3,23 +3,29 @@ from geopy.geocoders import Nominatim
 from math import radians, sin, cos, sqrt, atan2
 from datetime import datetime
 from latex import create_latex_from_images
-from yolocr import yolo_inference
+from yolocr import yolo_inference,ocr_image
+from flask_cors import CORS
 
+from mailer import send_email
 import os
 import exifread
 import csv
 
+
+
+# Example usage
+
 input_folder = 'images'
 
 resultat_csv_path = 'resultat/image_info.csv'
-b2b_csv_path = 'modeles/b2b.csv'
+b2b_csv_path = 'modeles/b2c.csv'
 updated_csv_path = 'resultat/dataset.csv'
 csv_file_path_json='resultat/datasets.csv'
 
 app = Flask(__name__)
-# Exemple d'utilisation de la fonction
-rapport_tex = 'rapport.tex'
-rapport = 'Rapport'
+
+CORS(app, origins=["http://localhost:3000"])
+
 
 # Configuration des dossiers de téléchargement et de résultats
 app.config['UPLOAD_FOLDER'] = 'images'
@@ -125,12 +131,12 @@ def upload_images():
 
 @app.route('/execute_all', methods=['POST'])
 def execute_all():
-    # yolo_inference()
-    # save_image_info()
-    # update_csv()
-
+    ocr_image()
+    yolo_inference()
+    save_image_info()
+    update_csv()
     create_latex_from_images(input_folder, rapport_tex, rapport, max_width=800, max_height=600)
-    # send_email()
+    send_email()
     return jsonify({'message': 'All functionalities executed successfully'})
 
 @app.route('/download_csv/<filename>', methods=['GET'])
@@ -179,7 +185,7 @@ def update_csv():
                     if lat and lon:
                         try:
                             distance = calculate_distance(latitude, longitude, float(lat), float(lon))
-                            if distance <= 2000:
+                            if distance <= 200000:
                                 nearby_activities.append(b2b)
                         except ValueError:
                             pass
@@ -194,6 +200,8 @@ def update_csv():
         writer.writerows(updated_rows)
 
     return jsonify({'message': 'PDF file updated successfully'})
-
+# Exemple d'utilisation de la fonction
+rapport_tex = 'rapport.tex'
+rapport = 'Rapport'
 if __name__ == '__main__':
     app.run(debug=True)
